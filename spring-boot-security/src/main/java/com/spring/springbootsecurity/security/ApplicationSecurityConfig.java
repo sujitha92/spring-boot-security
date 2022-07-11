@@ -4,6 +4,8 @@ import static com.spring.springbootsecurity.security.ApplicationUserRole.ADMIN;
 import static com.spring.springbootsecurity.security.ApplicationUserRole.ADMINTRAINEE;
 import static com.spring.springbootsecurity.security.ApplicationUserRole.STUDENT;
 
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,16 +36,34 @@ public class ApplicationSecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		
 		http
-		.csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-		.and()
-		//.csrf().disable()
+		//.csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+		//.and()
+		.csrf().disable()
 		.authorizeRequests()
 		.antMatchers("/","/index").permitAll()
 		.antMatchers("/student/**").hasRole(STUDENT.name())
 		.anyRequest()
 		.authenticated()
 		.and()
-		.httpBasic();
+		.formLogin()//form based authentication instead of httpbasic();
+			.loginPage("/login")
+			.permitAll()//to have our own custom login page
+			.defaultSuccessUrl("/courses",true)
+			.passwordParameter("password")//can be changed according to the form name given in html
+            .usernameParameter("username")//as of now set to default.
+		.and()
+		.rememberMe() //default 2 weeks
+			.tokenValiditySeconds((int)TimeUnit.DAYS.toSeconds(21))
+			.key("something_very_secured")
+			.rememberMeParameter("remember-me")
+		.and()
+		.logout()
+			.logoutUrl("/logout")
+			.clearAuthentication(true)
+			.invalidateHttpSession(true)
+			.deleteCookies("JSESSIONID","remember-me")
+			.logoutSuccessUrl("/login");
+	
 		
 		return http.build();
 		
