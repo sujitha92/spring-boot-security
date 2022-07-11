@@ -1,12 +1,12 @@
 package com.spring.springbootsecurity.security;
 
-import static com.spring.springbootsecurity.security.ApplicationUserPermission.*;
-import static com.spring.springbootsecurity.security.ApplicationUserRole.*;
+import static com.spring.springbootsecurity.security.ApplicationUserRole.ADMIN;
+import static com.spring.springbootsecurity.security.ApplicationUserRole.ADMINTRAINEE;
+import static com.spring.springbootsecurity.security.ApplicationUserRole.STUDENT;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
 //to use annotations over ant matchers for permissions
@@ -24,30 +25,21 @@ public class ApplicationSecurityConfig {
 	/*
 	 * BASIC AUTH
 	 * 
-	 * ant matchers - to open index page without any authentication.
+	 * Enable CSRF - Only when the client is browser
 	 * 
-	 * Only Student to view student api --> hasRole()
-	 * 
-	 * Only Admin and AdminTrainee can view management api -->hasAnyRole()
-	 * 
-	 * Admin Trainee has permission to only read (i.e get) 
-	 * Only Admin has permission to write and read--> hasAuthority ()
-	 * 
-	 * antMatchers order matters.
 	 */
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		
-		http.csrf().disable()
+		http
+		.csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+		.and()
+		//.csrf().disable()
 		.authorizeRequests()
 		.antMatchers("/","/index").permitAll()
 		.antMatchers("/student/**").hasRole(STUDENT.name())
-		.antMatchers(HttpMethod.DELETE,"/management/student/**").hasAuthority(COURSE_WRITE.getPermission())
-		.antMatchers(HttpMethod.PUT,"/management/student/**").hasAuthority(COURSE_WRITE.getPermission())
-		.antMatchers(HttpMethod.POST,"/management/student/**").hasAuthority(COURSE_WRITE.getPermission())
-		.antMatchers("/management/student/**").hasAnyRole(ADMIN.name(),ADMINTRAINEE.name())
 		.anyRequest()
 		.authenticated()
 		.and()
