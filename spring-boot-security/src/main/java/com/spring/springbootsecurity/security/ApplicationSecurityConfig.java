@@ -4,25 +4,27 @@ import static com.spring.springbootsecurity.security.ApplicationUserRole.ADMIN;
 import static com.spring.springbootsecurity.security.ApplicationUserRole.ADMINTRAINEE;
 import static com.spring.springbootsecurity.security.ApplicationUserRole.STUDENT;
 
-import java.util.concurrent.TimeUnit;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+
+import com.spring.springbootsecurity.jwt.JwtAuthenticationFilter;
+import com.spring.springbootsecurity.jwt.JwtTokenVerifier;
 
 @Configuration
 //to use annotations over ant matchers for permissions
 @EnableGlobalMethodSecurity(prePostEnabled = true)
-public class ApplicationSecurityConfig {
+public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter  {
+	
 	
 	/*
 	 * BASIC AUTH
@@ -32,40 +34,26 @@ public class ApplicationSecurityConfig {
 	 */
 	@Autowired
 	private PasswordEncoder passwordEncoder;
-	@Bean
-	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+	
+	 @Override
+	 protected void configure(HttpSecurity http) throws Exception {
+		
+		//authenticationManager = http.getSharedObject(AuthenticationManager.class);
 		
 		http
-		//.csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-		//.and()
 		.csrf().disable()
+		.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+		.and()
+		.addFilter(new JwtAuthenticationFilter(authenticationManager()))
+		.addFilterAfter(new JwtTokenVerifier(), JwtAuthenticationFilter.class)
 		.authorizeRequests()
 		.antMatchers("/","/index").permitAll()
 		.antMatchers("/student/**").hasRole(STUDENT.name())
 		.anyRequest()
-		.authenticated()
-		.and()
-		.formLogin()//form based authentication instead of httpbasic();
-			.loginPage("/login")
-			.permitAll()//to have our own custom login page
-			.defaultSuccessUrl("/courses",true)
-			.passwordParameter("password")//can be changed according to the form name given in html
-            .usernameParameter("username")//as of now set to default.
-		.and()
-		.rememberMe() //default 2 weeks
-			.tokenValiditySeconds((int)TimeUnit.DAYS.toSeconds(21))
-			.key("something_very_secured")
-			.rememberMeParameter("remember-me")
-		.and()
-		.logout()
-			.logoutUrl("/logout")
-			.clearAuthentication(true)
-			.invalidateHttpSession(true)
-			.deleteCookies("JSESSIONID","remember-me")
-			.logoutSuccessUrl("/login");
+		.authenticated();
 	
 		
-		return http.build();
+		//return http.build();
 		
 	}
 	/*

@@ -1,4 +1,4 @@
-package com.spring.springbootsecurity;
+package com.spring.springbootsecurity.controller;
 
 import java.util.List;
 

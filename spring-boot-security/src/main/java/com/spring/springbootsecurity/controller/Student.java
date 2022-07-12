@@ -1,4 +1,4 @@
-package com.spring.springbootsecurity;
+package com.spring.springbootsecurity.controller;
 
 public class Student {
 	
